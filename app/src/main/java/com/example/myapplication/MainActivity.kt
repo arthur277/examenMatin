@@ -5,80 +5,102 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.core.app.NotificationCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Toast.makeText(this, "Bienvenue sur FinalExamApp!", Toast.LENGTH_LONG).show()
+        setContentView (R.layout.activity_main)
+        // Récupérer le message localisé
+        val welcomeMessage = getString(R.string.welcome_message)
+        // Afficher un Toast avec le message localisé
+        Toast.makeText(this, welcomeMessage, Toast.LENGTH_LONG).show()
+        showNotification(this)
+        // Créer une requête pour exécuter MyWorker une seule fois
         val workRequest = OneTimeWorkRequestBuilder<MyWorker>().build()
+        // Enregistrer la requête avec WorkManager
         WorkManager.getInstance(this).enqueue(workRequest)
-
+        val textView = findViewById<TextView>(R.id.textView)
+        // Modify the text programmatically
+        textView.text = "Bienvenue sur FinalExamApp!"
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = MyAdapter()
-
-        // Créez la base de données en utilisant Room
+        // Initialiser RecyclerView
+        val userRecyclerView = findViewById<RecyclerView>(R.id.userRecyclerView)
+        userRecyclerView.layoutManager = LinearLayoutManager(this)
+        // Initialiser la base de données Room
         val db = Room.databaseBuilder(
             applicationContext,
-            AppDatabase::class.java, "user-database"
+            AppDatabase::class.java, "exam_database"
         ).build()
-
-// Utilisez le DAO pour insérer ou récupérer des données
         val userDao = db.userDao()
-
-// Exemple d'insertion d'un utilisateur
-        val user = User(id = 1, name = "John Doe")
-        userDao.insert(user)
-
-// Exemple de récupération de tous les utilisateurs
-        val users = userDao.getAll()
-
-// Exemple d'observation des utilisateurs dans une activité ou un fragment
-        //userDao.getAll().observe(this, Observer { users ->
-            // Mettez à jour l'UI avec la liste des utilisateurs
-       // })
-
+        // Observer les données avec LiveData
+        userDao.getAll().observe(this) { users ->
+            userRecyclerView.adapter = UserAdapter(users)
+        }
+        // Insérer un utilisateur dans la base de données
+        lifecycleScope.launch(Dispatchers.IO)
+        {
+            // Utilisation de Dispatchers.IO pour exécuter sur un thread d'E/S
+            userDao.insert(User(1, "John Doe"))
+            userDao.insert(User(2, "Jane Smith"))
+        }
+        // Mettre à jour le TextView avec les données des préférences
+        val userInfoTextView = findViewById<TextView>(R.id.userInfoTextView)
+        manageSharedPreferences(this, userInfoTextView)
     }
-
 }
-fun notificationShow(context: Context) {
-    // Récupère le service NotificationManager
-    val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-    // ID du canal pour les notifications
-    val channelId = "exam_channel"
 
-    // Vérifier si la version Android est 8.0 (API 26) ou supérieure
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        // Créer un canal de notification pour Android 8.0 et plus
-        val channel = NotificationChannel(
-            channelId,
-            "Exam Notifications",
-            NotificationManager.IMPORTANCE_DEFAULT
-        )
 
-        // Enregistrez ce canal dans le système
-        notificationManager.createNotificationChannel(channel)
-    }
 
-    // Créez la notification
-    val notification = NotificationCompat.Builder(context, channelId)
-        .setContentTitle("Notification FinalExamApp")
-        .setContentText("Bonjour, voici un exemple de notification.")
-        .setSmallIcon(R.drawable.ic_notification) // Assurez-vous que cette icône existe
-        .build()
+fun showNotification(context: Context) {
+    val notificationManager =
+        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    val channelId =
+        "exam_channel"
+// Créer le canal pour Android 8.0 (API 26) et plus
+if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {    val
+        channelName = "Exam Notifications"
+    val importance = NotificationManager.IMPORTANCE_DEFAULT
+    val channel = NotificationChannel(channelId, channelName, importance).apply {
+        description = "Notifications for exam updates"        }
+    notificationManager.createNotificationChannel(channel)    }
+// Construire la notification
+val notification = NotificationCompat.Builder(context, channelId)
+    .setContentTitle("Notification FinalExamApp")
+    .setContentText("Bonjour, voici un exemple de notification.")
+    .setSmallIcon(R.drawable.ic_notification)
+// Assurez-vous que l'icône existe dans res/drawable
+.setPriority(NotificationCompat.PRIORITY_DEFAULT)
+// Priorité pour Android 7.1 (API 25) et moins
+.build()    // Afficher la notification
+  notificationManager.notify(1, notification)}
+private fun manageSharedPreferences(context: Context, textView: TextView) {
+// Écriture dans SharedPreferences
+val sharedPreferences = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+    val editor = sharedPreferences.edit()
+    editor.putString("username", "John Doe")
+    editor.putInt("userId", 1)
+    editor.apply()
+// Lecture dans SharedPreferences
+val username = sharedPreferences.getString("username", "Default User")
+    val userId = sharedPreferences.getInt("userId", -1)
+// Mettre à jour le texte du TextView
+textView.text = "Nom d'utilisateur : $username, ID : $userId"}
 
-    // Affiche la notification avec l'ID 1
-    notificationManager.notify(1, notification)
-}
 
 

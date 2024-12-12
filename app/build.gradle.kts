@@ -6,15 +6,14 @@ plugins {
 
 android {
     namespace = "com.example.myapplication"
-    compileSdk = 34
+    compileSdk = 35  // Mettez à jour à 35
 
     defaultConfig {
         applicationId = "com.example.myapplication"
-        minSdk = 34
-        targetSdk = 34
+        minSdk = 21  // Gardez votre minSdk selon vos besoins
+        targetSdk = 34  // Mettez à jour à 35
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true

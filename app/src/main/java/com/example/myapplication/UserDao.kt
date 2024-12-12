@@ -11,4 +11,7 @@ interface UserDao {
     fun getAll(): LiveData<List<User>>
     @Insert
     fun insert(user: User)
+
+    @Query("SELECT * FROM user WHERE id = :id LIMIT 1")
+    suspend fun getUserById(id: Int): User
 }

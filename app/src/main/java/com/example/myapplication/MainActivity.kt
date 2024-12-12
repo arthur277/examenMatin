@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -22,6 +23,7 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d("App:MainActivity", "onCreate called - Initializing UI components")
         setContentView (R.layout.activity_main)
         // Récupérer le message localisé
         val welcomeMessage = getString(R.string.welcome_message)
@@ -38,6 +40,7 @@ class MainActivity : ComponentActivity() {
         val recyclerView = findViewById<RecyclerView>(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = MyAdapter()
+        Log.d("App:MainActivity", "RecyclerView initialized with LinearLayoutManager")
         // Initialiser RecyclerView
         val userRecyclerView = findViewById<RecyclerView>(R.id.userRecyclerView)
         userRecyclerView.layoutManager = LinearLayoutManager(this)
@@ -50,13 +53,21 @@ class MainActivity : ComponentActivity() {
         // Observer les données avec LiveData
         userDao.getAll().observe(this) { users ->
             userRecyclerView.adapter = UserAdapter(users)
+            Log.d("App:Database", "Observed ${users.size} users in the database")
         }
+
         // Insérer un utilisateur dans la base de données
         lifecycleScope.launch(Dispatchers.IO)
         {
             // Utilisation de Dispatchers.IO pour exécuter sur un thread d'E/S
-            userDao.insert(User(1, "John Doe"))
-            userDao.insert(User(2, "Jane Smith"))
+            try {
+                userDao.insert(User(1, "John Doe"))
+                userDao.insert(User(2, "Jane Smith"))
+                Log.d("App:Database", "Successfully inserted John Doe into the database")
+            } catch (e: Exception) {
+                Log.e("App:Database", "Error inserting John Doe: ${e.message}")
+            }
+
         }
         // Mettre à jour le TextView avec les données des préférences
         val userInfoTextView = findViewById<TextView>(R.id.userInfoTextView)

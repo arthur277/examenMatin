@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">MyApplication</string>
+    <string name="welcome_message">Bienvenue sur FinalExamApp!</string>
+</resources>
